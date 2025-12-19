@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environnements virtuels
+env/
+.venv/
+venv/
+ENV/
+pyvenv.cfg
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Résultats lourds
+resultats/*.png
+resultats/*.csv

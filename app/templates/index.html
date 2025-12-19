@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulation Cristallisation Sucrière</title>
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Votre CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --secondary-color: #6c757d;
+            --success-color: #198754;
+            --info-color: #0dcaf0;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --purple-color: #6f42c1;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding-bottom: 30px;
+        }
+        
+        .navbar {
+            border-bottom: 3px solid var(--primary-color);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .card {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-bottom: 20px;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        
+        .card-header {
+            border-radius: 15px 15px 0 0 !important;
+            font-weight: 600;
+            padding: 15px 20px;
+        }
+        
+        .btn-custom {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #0b5ed7 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 24px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-custom:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3);
+        }
+        
+        .form-control {
+            border-radius: 10px;
+            padding: 12px 15px;
+            border: 2px solid #dee2e6;
+            transition: all 0.3s;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+        
+        .result-card {
+            background: white;
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        }
+        
+        .result-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 5px 0;
+        }
+        
+        .result-label {
+            font-size: 0.85rem;
+            color: var(--secondary-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        
+        .graph-card {
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+        
+        .graph-card:hover {
+            transform: translateY(-3px);
+        }
+        
+        .graph-img {
+            width: 100%;
+            height: auto;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .badge-custom {
+            font-size: 0.75rem;
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+        
+        #console {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            height: 200px;
+            overflow-y: auto;
+            background-color: #1a1a1a;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        
+        .console-line {
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+        
+        .console-time {
+            color: #888;
+        }
+        
+        .console-message {
+            color: #fff;
+        }
+        
+        .console-success {
+            color: #00ff00;
+        }
+        
+        .console-error {
+            color: #ff4444;
+        }
+        
+        .console-warning {
+            color: #ffaa00;
+        }
+        
+        .table-hover tbody tr:hover {
+            background-color: rgba(13, 110, 253, 0.05);
+        }
+        
+        .progress-bar {
+            border-radius: 20px;
+        }
+        
+        /* Animation pour les nouveaux résultats */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-in {
+            animation: fadeInUp 0.5s ease-out;
+        }
+        
+        /* Style pour les onglets */
+        .nav-tabs .nav-link {
+            border-radius: 10px 10px 0 0;
+            font-weight: 500;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .card {
+                margin-bottom: 15px;
+            }
+            
+            .result-value {
+                font-size: 1.5rem;
+            }
+            
+            .btn-custom {
+                padding: 10px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-industry me-2"></i>
+                <strong>Simulation Cristallisation Sucrière</strong>
+            </a>
+            <div class="d-flex">
+                <span class="badge bg-success me-2">
+                    <i class="fas fa-check-circle me-1"></i>
+                    Flask
+                </span>
+                <span class="badge bg-warning text-dark">
+                    <i class="fas fa-chart-line me-1"></i>
+                    Graphiques
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- Colonne gauche : Formulaire et contrôle -->
+            <div class="col-lg-4">
+                <!-- Carte de paramètres -->
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0"><i class="fas fa-sliders-h me-2"></i>Paramètres</h4>
+                        <button class="btn btn-sm btn-light" onclick="resetForm()">
+                            <i class="fas fa-redo me-1"></i>Réinitialiser
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <form id="simulationForm">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-tint me-1"></i>Débit d'alimentation
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="F" value="20000" step="1000" min="1000">
+                                    <span class="input-group-text">kg/h</span>
+                                </div>
+                                <div class="form-text">Débit total de solution à traiter</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-percentage me-1"></i>Concentration initiale
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="xF" value="15" step="0.1" min="1" max="99">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <div class="form-text">Concentration en saccharose initiale</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-percentage me-1"></i>Concentration finale
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="x_final" value="65" step="0.1" min="1" max="99">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <div class="form-text">Concentration souhaitée après évaporation</div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-thermometer-half me-1"></i>Température d'alimentation
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="T_feed" value="85" step="0.1" min="20" max="120">
+                                    <span class="input-group-text">°C</span>
+                                </div>
+                                <div class="form-text">Température de la solution d'entrée</div>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-success btn-lg py-3" onclick="lancerSimulation()">
+                                    <i class="fas fa-play-circle me-2"></i>
+                                    Lancer la Simulation Complète
+                                </button>
+                                
+                                <button type="button" class="btn btn-outline-primary" onclick="testerAPI()">
+                                    <i class="fas fa-vial me-2"></i>
+                                    Tester la connexion API
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <hr class="my-4">
+                        
+                        <!-- Paramètres avancés -->
+                        <div class="accordion" id="advancedAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#advancedParams">
+                                        <i class="fas fa-cogs me-2"></i>Paramètres avancés
+                                    </button>
+                                </h2>
+                                <div id="advancedParams" class="accordion-collapse collapse" data-bs-parent="#advancedAccordion">
+                                    <div class="accordion-body">
+                                        <p class="small text-muted">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Ces paramètres sont définis dans votre code Python
+                                        </p>
+                                        <ul class="list-group list-group-flush small">
+                                            <li class="list-group-item d-flex justify-content-between">
+                                                <span>Pressions (bar):</span>
+                                                <span class="fw-bold">[1.5, 0.6, 0.15]</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between">
+                                                <span>Coefficients U (W/m²·K):</span>
+                                                <span class="fw-bold">[2500, 2200, 1800]</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between">
+                                                <span>Temps cristallisation:</span>
+                                                <span class="fw-bold">4 heures</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Console de débogage -->
+                <div class="card shadow mt-3">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-terminal me-2"></i>Console</h5>
+                        <button class="btn btn-sm btn-outline-light" onclick="clearConsole()">
+                            <i class="fas fa-eraser"></i>
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="console">
+                            <div class="console-line">
+                                <span class="console-time">[00:00:00]</span>
+                                <span class="console-message">Interface web chargée</span>
+                            </div>
+                            <div class="console-line">
+                                <span class="console-time">[00:00:00]</span>
+                                <span class="console-success">✅ Structure des dossiers: OK</span>
+                            </div>
+                            <div class="console-line">
+                                <span class="console-time">[00:00:00]</span>
+                                <span class="console-message">Prêt pour la simulation...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Informations système -->
+                <div class="card shadow mt-3">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informations</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="small">
+                            Cette application web a été développée pour l’étude et la simulation des procédés de concentration
+            et de cristallisation dans l’industrie.
+                        </p>
+                        <ul class="small">
+                            <li>Calculer l'évaporation triple effet</li>
+                            <li>Simuler la cristallisation</li>
+                            <li>Générer des graphiques en temps réel</li>
+                            <li>Effectuer le dimensionnement des équipements</li>
+                        </ul>
+                        <div class="alert alert-warning small mb-0">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            Calculs réalisés en Python et visualisation via Flask & Matplotlib
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Colonne droite : Résultats et graphiques -->
+            <div class="col-lg-8">
+                <!-- Loader -->
+                <div id="loader" class="card shadow" style="display: none;">
+                    <div class="card-body text-center py-5">
+                        <div class="spinner-border text-primary" style="width: 4rem; height: 4rem;"></div>
+                        <h4 class="mt-4">Simulation en cours...</h4>
+                        <p class="text-muted mb-0">
+                            Exécution de vos fonctions Python et génération des graphiques
+                        </p>
+                        <div class="progress mt-3" style="height: 10px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Onglets pour les résultats -->
+                <div id="results-tabs" style="display: none;">
+                    <ul class="nav nav-tabs" id="resultsTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="evaporation-tab" data-bs-toggle="tab" data-bs-target="#evaporation" type="button">
+                                <i class="fas fa-water me-1"></i>Évaporation
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="cristallisation-tab" data-bs-toggle="tab" data-bs-target="#cristallisation" type="button">
+                                <i class="fas fa-snowflake me-1"></i>Cristallisation
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="economique-tab" data-bs-toggle="tab" data-bs-target="#economique" type="button">
+                                <i class="fas fa-euro-sign me-1"></i>Économique
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="graphiques-tab" data-bs-toggle="tab" data-bs-target="#graphiques" type="button">
+                                <i class="fas fa-chart-line me-1"></i>Graphiques
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content p-3 border border-top-0 rounded-bottom shadow-sm bg-white" id="resultsTabContent">
+                        <!-- Onglet Évaporation -->
+                        <div class="tab-pane fade show active" id="evaporation" role="tabpanel">
+                            <div id="evaporation-results"></div>
+                        </div>
+                        
+                        <!-- Onglet Cristallisation -->
+                        <div class="tab-pane fade" id="cristallisation" role="tabpanel">
+                            <div id="cristallisation-results"></div>
+                        </div>
+                        
+                        <!-- Onglet Économique -->
+                        <div class="tab-pane fade" id="economique" role="tabpanel">
+                            <div id="economique-results"></div>
+                        </div>
+                        
+                        <!-- Onglet Graphiques -->
+                        <div class="tab-pane fade" id="graphiques" role="tabpanel">
+                            <div id="graphiques-container">
+                                <div class="row" id="graphiques"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Message d'accueil -->
+                <div id="welcome-message" class="card shadow">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-chart-bar display-1 text-primary mb-4"></i>
+                        <h3>Bienvenue dans la simulation</h3>
+                        <p class="lead text-muted">
+                            Remplissez les paramètres à gauche et cliquez sur "Lancer la Simulation"
+                        </p>
+                        <p class="small text-muted">
+                            <i class="fas fa-lightbulb me-1"></i>
+                            Les résultats et graphiques s'afficheront ici automatiquement
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pied de page -->
+    <footer class="footer mt-5 py-3 bg-light border-top">
+        <div class="container text-center">
+            <span class="text-muted">
+                <i class="fas fa-code me-1"></i>
+                Simulation Cristallisation Sucrière • 
+                <i class="fas fa-flask me-1"></i>
+                Génie des Procédés • 
+                <i class="fas fa-chart-line me-1"></i>
+                Graphiques Matplotlib
+            </span>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <script>
+    // Variables globales
+    let currentResults = null;
+    
+    // Fonction pour ajouter des logs à la console
+    function ajouterLog(message, type = 'info') {
+        const console = document.getElementById('console');
+        const timestamp = new Date().toLocaleTimeString();
+        
+        let typeClass = 'console-message';
+        if (type === 'success') typeClass = 'console-success';
+        if (type === 'error') typeClass = 'console-error';
+        if (type === 'warning') typeClass = 'console-warning';
+        
+        const logLine = document.createElement('div');
+        logLine.className = 'console-line';
+        logLine.innerHTML = `
+            <span class="console-time">[${timestamp}]</span>
+            <span class="${typeClass}">${message}</span>
+        `;
+        
+        console.appendChild(logLine);
+        console.scrollTop = console.scrollHeight;
+    }
+    
+    // Fonction pour effacer la console
+    function clearConsole() {
+        document.getElementById('console').innerHTML = '';
+        ajouterLog('Console effacée', 'warning');
+    }
+    
+    // Fonction pour réinitialiser le formulaire
+    function resetForm() {
+        document.getElementById('F').value = 20000;
+        document.getElementById('xF').value = 15;
+        document.getElementById('x_final').value = 65;
+        document.getElementById('T_feed').value = 85;
+        ajouterLog('Formulaire réinitialisé', 'warning');
+    }
+    
+    // Fonction pour tester l'API
+    function testerAPI() {
+        ajouterLog('Test de connexion à l\'API...', 'info');
+        
+        fetch('/api/test')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    ajouterLog('✅ API Flask fonctionne correctement', 'success');
+                    
+                    // Notification visuelle
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 end-0 m-3';
+                    alertDiv.style.zIndex = '1050';
+                    alertDiv.innerHTML = `
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>Connexion réussie!</strong> API Flask opérationnelle.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    document.body.appendChild(alertDiv);
+                    
+                    setTimeout(() => {
+                        if (alertDiv.parentNode) {
+                            alertDiv.remove();
+                        }
+                    }, 5000);
+                }
+            })
+            .catch(error => {
+                ajouterLog(`❌ Erreur de connexion: ${error}`, 'error');
+            });
+    }
+    
+    // Fonction principale pour lancer la simulation
+    function lancerSimulation() {
+        // Récupère les valeurs
+        const F = document.getElementById('F').value;
+        const xF = document.getElementById('xF').value / 100;
+        const x_final = document.getElementById('x_final').value / 100;
+        const T_feed = document.getElementById('T_feed').value;
+        
+        // Validation
+        if (!F || !xF || !x_final || !T_feed) {
+            ajouterLog('❌ Veuillez remplir tous les champs', 'error');
+            return;
+        }
+        
+        // Affiche le loader
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('welcome-message').style.display = 'none';
+        document.getElementById('results-tabs').style.display = 'none';
+        
+        // Efface les résultats précédents
+        document.getElementById('evaporation-results').innerHTML = '';
+        document.getElementById('cristallisation-results').innerHTML = '';
+        document.getElementById('economique-results').innerHTML = '';
+        document.getElementById('graphiques').innerHTML = '';
+        
+        ajouterLog(`Début de simulation avec: F=${F} kg/h, xF=${(xF*100).toFixed(1)}%, x_final=${(x_final*100).toFixed(1)}%, T=${T_feed}°C`, 'info');
+        ajouterLog('Appel de vos fonctions Python...', 'info');
+        
+        // Appel API
+        fetch('/api/simuler', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                F: F,
+                xF: xF,
+                x_final: x_final,
+                T_feed: T_feed
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Erreur HTTP: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Cache le loader
+            document.getElementById('loader').style.display = 'none';
+            
+            if (data.success) {
+                currentResults = data.resultats;
+                ajouterLog('✅ Simulation terminée avec succès', 'success');
+                ajouterLog('📊 Génération des résultats et graphiques...', 'info');
+                
+                // Affiche les résultats
+                afficherResultats(data.resultats);
+                
+                // Affiche les onglets
+                document.getElementById('results-tabs').style.display = 'block';
+                
+                // Active le premier onglet
+                const firstTab = new bootstrap.Tab(document.getElementById('evaporation-tab'));
+                firstTab.show();
+                
+            } else {
+                ajouterLog(`❌ Erreur: ${data.error}`, 'error');
+                document.getElementById('welcome-message').style.display = 'block';
+                
+                // Affiche l'erreur
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'alert alert-danger';
+                errorDiv.innerHTML = `
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Erreur lors de la simulation:</strong> ${data.error}
+                `;
+                document.getElementById('welcome-message').innerHTML = '';
+                document.getElementById('welcome-message').appendChild(errorDiv);
+            }
+        })
+        .catch(error => {
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('welcome-message').style.display = 'block';
+            
+            ajouterLog(`❌ Erreur réseau: ${error.message}`, 'error');
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-danger';
+            errorDiv.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Erreur de connexion:</strong> ${error.message}
+                <br><small>Vérifiez que le serveur Flask est en cours d'exécution</small>
+            `;
+            document.getElementById('welcome-message').innerHTML = '';
+            document.getElementById('welcome-message').appendChild(errorDiv);
+        });
+    }
+    
+    // Fonction pour afficher les résultats d'évaporation
+    function afficherEvaporation(resultats) {
+        let html = `
+            <h4 class="mb-4"><i class="fas fa-water text-primary me-2"></i>Évaporation Triple Effet</h4>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="result-card animate-fade-in">
+                        <div class="result-label">Vapeur de chauffe</div>
+                        <div class="result-value">${resultats.evaporation.performance.vapeur_chauffe.toFixed(1)} kg/h</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="result-card animate-fade-in">
+                        <div class="result-label">Économie de vapeur</div>
+                        <div class="result-value">${resultats.evaporation.performance.economie_vapeur.toFixed(2)}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <h5 class="mb-3">Détail par effet</h5>
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>Effet</th>
+                            <th>Liquide sortant</th>
+                            <th>Vapeur produite</th>
+                            <th>Concentration</th>
+                            <th>Température</th>
+                            <th>Surface échange</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        resultats.evaporation.effets.forEach(effet => {
+            html += `
+                <tr>
+                    <td><strong>Effet ${effet.numero}</strong></td>
+                    <td>${effet.liquide.toFixed(1)} kg/h</td>
+                    <td>${effet.vapeur.toFixed(1)} kg/h</td>
+                    <td>${effet.concentration.toFixed(2)} %</td>
+                    <td>${effet.temperature.toFixed(1)} °C</td>
+                    <td>${effet.surface.toFixed(1)} m²</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="alert alert-info mt-3">
+                <i class="fas fa-info-circle me-2"></i>
+                Ces résultats sont calculés par la fonction <code>evaporation_triple_effet()</code>
+            </div>
+        `;
+        
+        document.getElementById('evaporation-results').innerHTML = html;
+    }
+    
+    // Fonction pour afficher les résultats de cristallisation
+    function afficherCristallisation(resultats) {
+        let html = `
+            <h4 class="mb-4"><i class="fas fa-snowflake text-info me-2"></i>Cristallisation</h4>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="result-card animate-fade-in">
+                        <div class="result-label">Sursaturation finale</div>
+                        <div class="result-value">${resultats.cristallisation.sursaturation_finale.toFixed(4)}</div>
+                        <small class="text-muted">Valeur à la fin du processus</small>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="result-card animate-fade-in">
+                        <div class="result-label">Taille moyenne (L50)</div>
+                        <div class="result-value">${resultats.cristallisation.taille_moyenne.toFixed(1)} µm</div>
+                        <small class="text-muted">Taille moyenne des cristaux</small>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="result-card animate-fade-in">
+                        <div class="result-label">Coefficient de variation</div>
+                        <div class="result-value">${resultats.cristallisation.coefficient_variation.toFixed(1)} %</div>
+                        <small class="text-muted">Uniformité de la distribution</small>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="result-card animate-fade-in">
+                        <div class="result-label">Volume cristalliseur</div>
+                        <div class="result-value">${resultats.cristallisation.volume_cristalliseur.toFixed(2)} m³</div>
+                        <small class="text-muted">Volume nécessaire</small>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="result-card animate-fade-in">
+                        <div class="result-label">Puissance d'agitation</div>
+                        <div class="result-value">${resultats.cristallisation.puissance_agitation.toFixed(1)} W</div>
+                        <small class="text-muted">Puissance requise</small>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="result-card animate-fade-in">
+                        <div class="result-label">Vitesse de croissance</div>
+                        <div class="result-value">${(resultats.cristallisation.croissance_finale * 1e6).toFixed(2)} µm/s</div>
+                        <small class="text-muted">Vitesse finale</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="alert alert-info mt-3">
+                <i class="fas fa-info-circle me-2"></i>
+                Calculs basés sur les fonctions <code>profil_lineaire()</code>, <code>sursaturation()</code> et <code>croissance()</code>
+            </div>
+        `;
+        
+        document.getElementById('cristallisation-results').innerHTML = html;
+    }
+    
+    // Fonction pour afficher les résultats économiques
+    function afficherEconomique(resultats) {
+        let html = `
+            <h4 class="mb-4"><i class="fas fa-euro-sign text-warning me-2"></i>Analyse Économique</h4>
+            
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <div class="result-card animate-fade-in" style="border-left-color: var(--primary-color);">
+                        <div class="result-label">TCI (Total Capital Investment)</div>
+                        <div class="result-value">${resultats.economique.tci.toFixed(2)} M€</div>
+                        <small class="text-muted">Investissement total en capital</small>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="result-card animate-fade-in" style="border-left-color: var(--success-color);">
+                        <div class="result-label">OPEX annuel</div>
+                        <div class="result-value">${resultats.economique.opex.toFixed(2)} M€/an</div>
+                        <small class="text-muted">Coûts opérationnels annuels</small>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="result-card animate-fade-in" style="border-left-color: var(--warning-color);">
+                        <div class="result-label">ROI (Return on Investment)</div>
+                        <div class="result-value">${resultats.economique.roi.toFixed(1)} ans</div>
+                        <small class="text-muted">Temps de retour sur investissement</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Récapitulatif des coûts</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Analyse de rentabilité</h6>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Investissement initial</span>
+                                    <span class="fw-bold">${(resultats.economique.tci * 1000000).toLocaleString('fr-FR')} €</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Coûts annuels</span>
+                                    <span class="fw-bold">${(resultats.economique.opex * 1000000).toLocaleString('fr-FR')} €/an</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Période de retour</span>
+                                    <span class="fw-bold">${resultats.economique.roi.toFixed(1)} ans</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Recommandations</h6>
+                            <div class="alert ${resultats.economique.roi < 5 ? 'alert-success' : resultats.economique.roi < 10 ? 'alert-warning' : 'alert-danger'}">
+                                <i class="fas ${resultats.economique.roi < 5 ? 'fa-check-circle' : resultats.economique.roi < 10 ? 'fa-exclamation-triangle' : 'fa-times-circle'} me-2"></i>
+                                ${resultats.economique.roi < 5 ? 
+                                    'Excellent ROI! Projet très rentable.' : 
+                                    resultats.economique.roi < 10 ? 
+                                    'ROI acceptable. À étudier plus en détail.' : 
+                                    'ROI élevé. Projet peu rentable à court terme.'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('economique-results').innerHTML = html;
+    }
+    
+    // Fonction pour afficher les graphiques
+    function afficherGraphiques(graphiques) {
+        let html = `
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="graph-card animate-fade-in">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="mb-0"><i class="fas fa-thermometer-half me-2"></i>Température & Concentration</h6>
+                        </div>
+                        <div class="card-body text-center p-2">
+                            <img src="data:image/png;base64,${graphiques.profils_temp_conc}" 
+                                 class="img-fluid rounded graph-img" 
+                                 alt="Profils température et concentration">
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-outline-primary" onclick="telechargerGraphique('${graphiques.profils_temp_conc}', 'profils_temperature_concentration.png')">
+                                    <i class="fas fa-download me-1"></i>Télécharger
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="graph-card animate-fade-in">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="fas fa-water me-2"></i>Production & Surface</h6>
+                        </div>
+                        <div class="card-body text-center p-2">
+                            <img src="data:image/png;base64,${graphiques.vapeur_surface}" 
+                                 class="img-fluid rounded graph-img" 
+                                 alt="Production vapeur et surface">
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-outline-success" onclick="telechargerGraphique('${graphiques.vapeur_surface}', 'production_vapeur_surface.png')">
+                                    <i class="fas fa-download me-1"></i>Télécharger
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="graph-card animate-fade-in">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fas fa-snowflake me-2"></i>Cristallisation</h6>
+                        </div>
+                        <div class="card-body text-center p-2">
+                            <img src="data:image/png;base64,${graphiques.cristallisation}" 
+                                 class="img-fluid rounded graph-img" 
+                                 alt="Cristallisation">
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-outline-info" onclick="telechargerGraphique('${graphiques.cristallisation}', 'cristallisation.png')">
+                                    <i class="fas fa-download me-1"></i>Télécharger
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="graph-card animate-fade-in">
+                        <div class="card-header text-white" style="background-color: var(--purple-color);">
+                            <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Croissance & Taille</h6>
+                        </div>
+                        <div class="card-body text-center p-2">
+                            <img src="data:image/png;base64,${graphiques.croissance_taille}" 
+                                 class="img-fluid rounded graph-img" 
+                                 alt="Croissance et taille">
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-outline-purple" onclick="telechargerGraphique('${graphiques.croissance_taille}', 'croissance_taille.png')">
+                                    <i class="fas fa-download me-1"></i>Télécharger
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="alert alert-light border mt-3">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h6><i class="fas fa-lightbulb me-2"></i>Informations sur les graphiques</h6>
+                        <p class="small mb-0">
+                            Tous les graphiques sont générés en temps réel avec Matplotlib à partir de vos données Python.
+                            Cliquez sur "Télécharger" pour sauvegarder une image PNG.
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <button class="btn btn-outline-secondary btn-sm" onclick="telechargerTousGraphiques()">
+                            <i class="fas fa-download me-1"></i>Tout télécharger
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('graphiques').innerHTML = html;
+        
+        // Ajoute du style pour le bouton violet
+        const style = document.createElement('style');
+        style.textContent = `
+            .btn-outline-purple {
+                color: #6f42c1;
+                border-color: #6f42c1;
+            }
+            .btn-outline-purple:hover {
+                background-color: #6f42c1;
+                color: white;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Fonction pour télécharger un graphique
+    function telechargerGraphique(base64Data, filename) {
+        const link = document.createElement('a');
+        link.href = 'data:image/png;base64,' + base64Data;
+        link.download = filename;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        ajouterLog(`📥 Graphique téléchargé: ${filename}`, 'success');
+        
+        // Notification
+        const toast = document.createElement('div');
+        toast.className = 'alert alert-success alert-dismissible fade show position-fixed bottom-0 end-0 m-3';
+        toast.style.zIndex = '1050';
+        toast.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>
+            Graphique téléchargé: <strong>${filename}</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 3000);
+    }
+    
+    // Fonction pour télécharger tous les graphiques
+    function telechargerTousGraphiques() {
+        if (!currentResults || !currentResults.graphiques) {
+            ajouterLog('❌ Aucun graphique disponible à télécharger', 'error');
+            return;
+        }
+        
+        ajouterLog('📥 Téléchargement de tous les graphiques...', 'info');
+        
+        // Télécharge chaque graphique avec un délai
+        const graphiques = currentResults.graphiques;
+        const fichiers = [
+            { data: graphiques.profils_temp_conc, nom: 'profils_temperature_concentration.png' },
+            { data: graphiques.vapeur_surface, nom: 'production_vapeur_surface.png' },
+            { data: graphiques.cristallisation, nom: 'cristallisation.png' },
+            { data: graphiques.croissance_taille, nom: 'croissance_taille.png' }
+        ];
+        
+        fichiers.forEach((fichier, index) => {
+            setTimeout(() => {
+                telechargerGraphique(fichier.data, fichier.nom);
+            }, index * 500); // Délai de 500ms entre chaque téléchargement
+        });
+        
+        ajouterLog(`✅ ${fichiers.length} graphiques en cours de téléchargement`, 'success');
+    }
+    
+    // Fonction principale pour afficher tous les résultats
+    function afficherResultats(resultats) {
+        // Enregistre les résultats courants
+        currentResults = resultats;
+        
+        // Affiche chaque section
+        afficherEvaporation(resultats);
+        afficherCristallisation(resultats);
+        afficherEconomique(resultats);
+        afficherGraphiques(resultats.graphiques);
+        
+        ajouterLog('✅ Tous les résultats affichés', 'success');
+    }
+    
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', function() {
+        ajouterLog('✅ Interface web chargée avec succès', 'success');
+        ajouterLog('✅ Structure des dossiers: OK', 'success');
+        ajouterLog('✅ Prêt pour la simulation', 'success');
+        
+        // Permet d'utiliser la touche Entrée dans le formulaire
+        document.getElementById('simulationForm').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                lancerSimulation();
+            }
+        });
+        
+        // Affiche les informations de paramètres
+        console.log('Application Flask prête');
+        console.log('Graphiques Matplotlib activés');
+    });
+    </script>
+</body>
+</html>
