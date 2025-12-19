@@ -1,4 +1,4 @@
-# app_flask.py - VERSION COMPLÈTE AVEC GRAPHIQUES
+# app_flask.py 
 from flask import Flask, render_template, request, jsonify, send_file
 import sys
 import os
